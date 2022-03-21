@@ -1,0 +1,246 @@
+---
+title: "2: Maps"
+output: html_notebook
+---
+
+*Nate Breznau*, breznau.nate@gmail.com
+
+
+
+```{r setup, include=FALSE, message=F, warning=F}
+
+rm(list = ls(all = TRUE))
+knitr::opts_chunk$set(echo = TRUE)
+
+#Column no missing function
+completeFun <- function(data, desiredCols) {
+  completeVec <- complete.cases(data[, desiredCols])
+  return(data[completeVec, ])
+}
+
+library(pacman)
+pacman::p_load("tidyverse","ggplot2","kableExtra","GLMMadaptive",
+               "countrycode","ragg",
+               'rnaturalearth','sf', "ggmap")
+
+# necessary if not installed
+# webshot::install_phantomjs() 
+
+```
+
+```{r loaddata}
+wi_df <- read.csv(file = "data/wi_df.csv", header=T)
+wi_df_comb <- read.csv(file = here::here("data","wi_df_comb.csv"),header= T)
+```
+
+
+
+```{r prepdata}
+
+# Adjust GDP to the log
+wi_df <- wi_df %>%
+  mutate(gdpik  = gdpi/1000, 
+         gdplog = log(gdpik),
+         gdplogm = mean(gdplog, na.rm=T),
+         gdplogc = gdplog-gdplogm,
+         gdpm = mean(gdpik, na.rm=T),
+         gdpc = gdpik-gdpm,
+         first2full2 = first2full,
+       first2full = ifelse(is.na(first2full) & !is.na(commst), 50, first2full),
+         abol2 = ifelse(abol_indep_gap < -50, -50,
+                 ifelse(abol_indep_gap > 50, 50, abol_indep_gap)),
+         abol2 = ifelse(abol_indep_gap < - 50, 2,
+                 ifelse(abol_indep_gap < -40, 3, 
+                ifelse(abol_indep_gap >= -40 & abol_indep_gap < -20, 4,
+                ifelse(abol_indep_gap >= -20 & abol_indep_gap <= 0, 5, 
+                ifelse(abol_indep_gap > 0 & abol_indep_gap < 20, 6,
+                ifelse(abol_indep_gap >= 20 & abol_indep_gap < 40, 7,
+                ifelse(abol_indep_gap > 40, 8, NA))))))),
+         abol2 = ifelse(noslave == 1, NA, abol2),
+         abol2 = ifelse(commst == 1 & is.na(abol2), 1, abol2))
+
+
+```
+
+### Maps
+
+
+
+```{r map_prep}
+
+
+wi_map <- ne_countries(returnclass = "sf") %>%
+  st_transform("+proj=eqearth") %>%
+  mutate(id = iso_a3) %>%
+  select(id, geometry)
+```
+
+
+
+
+```{r join}
+# need iso code for linking with map
+wi_df_m <- wi_df %>%
+  mutate(id = countrycode(country_name, "country.name", "iso3c")) %>%
+  select(id, labor_workinjury_firstlaw, labor_workinjury_firstlaw_bluecollar_fullcoverage, first2full, abol, abol2, commst, noslave, abol_indep_gap, first2full_na)
+
+wi_map <- full_join(wi_map, wi_df_m, by = c("id")) %>%
+  subset(id != "ATA") 
+
+```
+
+
+
+#### Years Between Laws
+
+```{r map3}
+# source(here::here("utils/ggplot2_theme.R"), echo = FALSE)
+
+agg_png(filename = here::here("results","map3.png"), width = 1000, height = 800, res = 144)
+wi_map %>%
+
+  ggplot(aes(fill = first2full)) +
+  geom_sf(size = 0.15, colour = "black") +
+  scale_fill_continuous(limits = range(wi_map$first2full),
+                        type = "gradient",
+                        high = "#132B43", low = "#56B1F7",
+                        guide = guide_colourbar(#label.position = "top",
+                                                #barwidth = 10, barheight = .5,
+                                                #ticks.linwidth = 1
+                          ),
+                        na.value = "white") +
+  lims(x = c(-10100000,14000000)) +
+  coord_sf(label_axes = "----") +
+  labs(fill = NULL,
+       title = "Years Between First Law and First Full Law",
+       caption = "Source: GWIP v1.0 (Breznau and Lanver 2020)\nNote: Countries without a full-coverage law coded as 50") +
+  theme_classic() +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.key.width = unit(2, "line"))
+dev.off()
+
+knitr::include_graphics(here::here("results","map3.png"))
+```
+
+#### Abolition Indep Gap
+
+```{r map5}
+comm_dat <- data.frame(Country = c("Cuba", "Grenada", "Benin", "Congo", "Somalia", "Ethiopia", "Angola", "Mozambique", "Madagascar", "Seychelles", "Sao Tome"),
+                       long = c(23.1136, 12.8, 9.3077, -0.2280, 5.1521, 9.1450, -11.2027, -13.8, -18.7669, -4.6796, 0.1864),
+                       lat = c(-82.3666, -61.6790, 2.3158, 15.8277, 46.1996, 40.4897, 17.8739, 37.5, 46.8691, 55.492, -6.6131))
+  
+comm_sf = st_as_sf(comm_dat, coords = c("lat", "long"), 
+                 crs = 4326, agr = "constant")
+
+
+agg_png(filename = here::here("results","map_abol_indep.png"), width = 1000, height = 800, res = 144)
+
+wi_map %>%
+  ggplot() +
+  geom_sf(aes(fill = factor(abol2)), size = 0.15, colour = "black") +
+  scale_fill_manual(labels = c("COMMUNIST GOVERNANCE", 
+                                 "ABOLITION TIMING:",
+                                 "  40 years prior, or less", 
+                                 "  40 to 20 years prior", 
+                                 "  20 to 0 years prior",
+                                 "  0 to 20 years after",
+                                 "  20 to 40 years after",
+                                 "  40+ years after"),
+                      values = c("#FDE725FF",
+                                 "white",
+                                 "#29AF7FFF",
+                                 "#1F968BFF",
+                                 "#287D8EFF",
+                                 "#33638DFF",
+                                 "#404788FF",
+                                 "#482677FF"
+                                 ),
+                        na.value = "grey90", # can't get all NA to display as grey so have to leave it as white for now
+                    na.translate = F) +
+  geom_sf(data = comm_sf, size = 2, colour = "#FDE725FF", show.legend = F, inherit.aes = F) +
+  lims(x = c(-10100000,14000000)) +
+  coord_sf(label_axes = "----") +
+  labs(fill = NULL,
+       title = "Time Between Abolition of Chattel Slavery and Independence",
+       caption = "NOTE: Countries in white had no communist governance\nnor chattel/colonial enslaved worker production systems") +
+  theme_classic() 
+  
+dev.off()
+
+knitr::include_graphics(here::here("results","map_abol_indep.png"))
+```
+#### Year of Abolition
+
+```{r map4}
+# source(here::here("utils/ggplot2_theme.R"), echo = FALSE)
+
+#make dataframe for plotting circles for countries that have a slavery past and are communist
+#note S and W are negative
+comm_dat <- data.frame(Country = c("Cuba", "Grenada", "Benin", "Congo", "Somalia", "Ethiopia", "Angola", "Mozambique", "Madagascar", "Seychelles", "Sao Tome"),
+                       long = c(23.1136, 12.8, 9.3077, -0.2280, 5.1521, 9.1450, -11.2027, -13.8, -18.7669, -4.6796, 0.1864),
+                       lat = c(-82.3666, -61.6790, 2.3158, 15.8277, 46.1996, 40.4897, 17.8739, 37.5, 46.8691, 55.492, -6.6131))
+  
+comm_sf = st_as_sf(comm_dat, coords = c("lat", "long"), 
+                 crs = 4326, agr = "constant")
+
+agg_png(filename = here::here("results","map4.png"), width = 1000, height = 800, res = 144)
+wi_map %>%
+  mutate(abol = ifelse(abol < 1866, 2, 
+                ifelse(abol > 1865 & abol < 1931, 3,
+                ifelse(abol > 1930 & abol < 1956, 4, 
+                ifelse(abol > 1955 & abol < 1961, 5,
+                ifelse(abol > 1960 & abol < 1971, 6,
+                ifelse(abol > 1970 & abol < 1982, 7, 8)))))),
+         abol = ifelse(noslave == 1, NA, abol),
+         abol = ifelse(commst == 1 & is.na(abol), 1, abol)
+         ) %>%
+  ggplot() +
+  geom_sf(aes(fill = factor(abol)), size = 0.15, colour = "black") +
+  scale_fill_manual(labels = c("Communist", 
+                                 "Abolition:\n< 1866", 
+                                 "1866-1930", 
+                                 "1931-1955",
+                                 "1956-1960",
+                                 "1961-1970",
+                                 "1971-1981",
+                                 "1982+"),
+                      values = c("#FDE725FF",
+                                 "#29AF7FFF",
+                                 "#1F968BFF",
+                                 "#287D8EFF",
+                                 "#33638DFF",
+                                 "#404788FF",
+                                 "#482677FF",
+                                 "#440154FF"),
+                        na.value = "grey90",
+                    na.translate = F) +
+  geom_sf(data = comm_sf, size = 2, colour = "#FDE725FF", show.legend = F, inherit.aes = F) +
+  lims(x = c(-10100000,14000000)) +
+  coord_sf(label_axes = "----") +
+  labs(fill = NULL,
+       title = "Communism and Abolition by Country",
+       caption = "Note: Abolition is when slavery and forced labor legally ended\nSource: GWIP v1.0 (Breznau and Lanver 2020); Legal Slavery v1 (Rosling 2018) adapted by Author") +
+  theme_classic() +
+  theme(legend.position = "right",
+        legend.direction = "vertical",
+        legend.key.width = unit(1, "line"))
+dev.off()
+
+knitr::include_graphics(here::here("results","map4.png"))
+```
+
+### Correlations
+
+```{r corr}
+cor_map <- wi_map %>%
+  as.data.frame() %>%
+  select(first2full_na, abol2, abol, commst, noslave) %>%
+  subset(!is.na(first2full_na))
+
+cor(cor_map, use = "pairwise.complete.obs")
+
+
+m22 <- lm(first2full_na ~ gdplog  + period1 + period1*polity2i_first  +  commst + abol*noslave + noslave , data = wi_df)
+```
+
