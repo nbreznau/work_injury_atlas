@@ -1,6 +1,8 @@
 ---
-title: "2: Maps"
-output: html_notebook
+title: '2: Maps'
+output:
+  html_document:
+    df_print: paged
 ---
 
 *Nate Breznau*, breznau.nate@gmail.com
@@ -68,9 +70,7 @@ wi_df <- wi_df %>%
 
 ```{r map_prep}
 
-
 wi_map <- ne_countries(returnclass = "sf") %>%
-  st_transform("+proj=eqearth") %>%
   mutate(id = iso_a3) %>%
   select(id, geometry)
 ```
@@ -109,7 +109,7 @@ wi_map %>%
                                                 #ticks.linwidth = 1
                           ),
                         na.value = "white") +
-  lims(x = c(-10100000,14000000)) +
+  #lims(x = c(-10100000,14000000)) +
   coord_sf(label_axes = "----") +
   labs(fill = NULL,
        title = "Years Between First Law and First Full Law",
@@ -159,7 +159,7 @@ wi_map %>%
                         na.value = "grey90", # can't get all NA to display as grey so have to leave it as white for now
                     na.translate = F) +
   geom_sf(data = comm_sf, size = 2, colour = "#FDE725FF", show.legend = F, inherit.aes = F) +
-  lims(x = c(-10100000,14000000)) +
+  #lims(x = c(-10100000,14000000)) +
   coord_sf(label_axes = "----") +
   labs(fill = NULL,
        title = "Time Between Abolition of Chattel Slavery and Independence",
@@ -183,9 +183,8 @@ comm_dat <- data.frame(Country = c("Cuba", "Grenada", "Benin", "Congo", "Somalia
   
 comm_sf = st_as_sf(comm_dat, coords = c("lat", "long"), 
                  crs = 4326, agr = "constant")
-
-agg_png(filename = here::here("results","map4.png"), width = 1000, height = 800, res = 144)
-wi_map %>%
+# updated comm data file
+wi_map2<- wi_map %>%
   mutate(abol = ifelse(abol < 1866, 2, 
                 ifelse(abol > 1865 & abol < 1931, 3,
                 ifelse(abol > 1930 & abol < 1956, 4, 
@@ -194,7 +193,9 @@ wi_map %>%
                 ifelse(abol > 1970 & abol < 1982, 7, 8)))))),
          abol = ifelse(noslave == 1, NA, abol),
          abol = ifelse(commst == 1 & is.na(abol), 1, abol)
-         ) %>%
+         )
+agg_png(filename = here::here("results","map4.png"), width = 1000, height = 800, res = 144)
+wi_map2 %>%
   ggplot() +
   geom_sf(aes(fill = factor(abol)), size = 0.15, colour = "black") +
   scale_fill_manual(labels = c("Communist", 
@@ -216,7 +217,7 @@ wi_map %>%
                         na.value = "grey90",
                     na.translate = F) +
   geom_sf(data = comm_sf, size = 2, colour = "#FDE725FF", show.legend = F, inherit.aes = F) +
-  lims(x = c(-10100000,14000000)) +
+  #lims(x = c(-10100000,14000000)) +
   coord_sf(label_axes = "----") +
   labs(fill = NULL,
        title = "Communism and Abolition by Country",
@@ -230,17 +231,14 @@ dev.off()
 knitr::include_graphics(here::here("results","map4.png"))
 ```
 
-### Correlations
 
-```{r corr}
-cor_map <- wi_map %>%
-  as.data.frame() %>%
-  select(first2full_na, abol2, abol, commst, noslave) %>%
-  subset(!is.na(first2full_na))
+###
 
-cor(cor_map, use = "pairwise.complete.obs")
-
-
-m22 <- lm(first2full_na ~ gdplog  + period1 + period1*polity2i_first  +  commst + abol*noslave + noslave , data = wi_df)
+```{r savemapdata}
+write.csv(wi_map, here::here("data", "wi_map.csv"), row.names = F)
+write.csv(comm_sf, here::here("data", "comm_sf.csv"), row.names = F)
+write.csv(wi_map2, here::here("data", "wi_map2.csv"), row.names = F)
 ```
+
+
 
