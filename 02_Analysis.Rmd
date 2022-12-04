@@ -97,7 +97,7 @@ wi_map <- full_join(wi_map, wi_df_m, by = c("id")) %>%
 # source(here::here("utils/ggplot2_theme.R"), echo = FALSE)
 
 agg_png(filename = here::here("results","map3.png"), width = 1000, height = 800, res = 144)
-wi_map %>%
+first_full <- wi_map %>%
 
   ggplot(aes(fill = first2full)) +
   geom_sf(size = 0.15, colour = "black") +
@@ -118,6 +118,7 @@ wi_map %>%
   theme(legend.position = "bottom",
         legend.direction = "horizontal",
         legend.key.width = unit(2, "line"))
+first_full
 dev.off()
 
 knitr::include_graphics(here::here("results","map3.png"))
@@ -136,7 +137,7 @@ comm_sf = st_as_sf(comm_dat, coords = c("lat", "long"),
 
 agg_png(filename = here::here("results","map_abol_indep.png"), width = 1000, height = 800, res = 144)
 
-wi_map %>%
+abol_indep <- wi_map %>%
   ggplot() +
   geom_sf(aes(fill = factor(abol2)), size = 0.15, colour = "black") +
   scale_fill_manual(labels = c("COMMUNIST GOVERNANCE", 
@@ -165,7 +166,7 @@ wi_map %>%
        title = "Time Between Abolition of Chattel Slavery and Independence",
        caption = "NOTE: Countries in white had no communist governance\nnor chattel/colonial enslaved worker production systems") +
   theme_classic() 
-  
+  abol_indep
 dev.off()
 
 knitr::include_graphics(here::here("results","map_abol_indep.png"))
@@ -176,6 +177,12 @@ knitr::include_graphics(here::here("results","map_abol_indep.png"))
 # source(here::here("utils/ggplot2_theme.R"), echo = FALSE)
 
 #make dataframe for plotting circles for countries that have a slavery past and are communist
+#new version will have all dots, rather than a mix of dots and shading for comm countries
+t <- wi_map2 %>%
+subset(commst == 1, select = c(id)) %>%
+mutate(Country = countrycode(id, "iso3c", "country.name")) %>%
+subset(!(Country %in% comm_dat$Country))
+
 #note S and W are negative
 comm_dat <- data.frame(Country = c("Cuba", "Grenada", "Benin", "Congo", "Somalia", "Ethiopia", "Angola", "Mozambique", "Madagascar", "Seychelles", "Sao Tome"),
                        long = c(23.1136, 12.8, 9.3077, -0.2280, 5.1521, 9.1450, -11.2027, -13.8, -18.7669, -4.6796, 0.1864),
@@ -195,7 +202,7 @@ wi_map2<- wi_map %>%
          abol = ifelse(commst == 1 & is.na(abol), 1, abol)
          )
 agg_png(filename = here::here("results","map4.png"), width = 1000, height = 800, res = 144)
-wi_map2 %>%
+map2 <- wi_map2 %>%
   ggplot() +
   geom_sf(aes(fill = factor(abol)), size = 0.15, colour = "black") +
   scale_fill_manual(labels = c("Communist", 
@@ -226,6 +233,7 @@ wi_map2 %>%
   theme(legend.position = "right",
         legend.direction = "vertical",
         legend.key.width = unit(1, "line"))
+map2
 dev.off()
 
 knitr::include_graphics(here::here("results","map4.png"))
@@ -235,6 +243,10 @@ knitr::include_graphics(here::here("results","map4.png"))
 ###
 
 ```{r savemapdata}
+#ggsave(here::here("results","abol_indep.svg"), plot=abol_indep, width=10, height=7)
+ggsave(here::here("results","map1.svg"), plot=first_full, width=10, height=7)
+ggsave(here::here("results","map2.svg"), plot=map2, width=10, height=7)
+
 write.csv(wi_map, here::here("data", "wi_map.csv"), row.names = F)
 write.csv(comm_sf, here::here("data", "comm_sf.csv"), row.names = F)
 write.csv(wi_map2, here::here("data", "wi_map2.csv"), row.names = F)
