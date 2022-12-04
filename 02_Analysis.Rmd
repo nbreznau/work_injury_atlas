@@ -173,23 +173,33 @@ knitr::include_graphics(here::here("results","map_abol_indep.png"))
 ```
 #### Year of Abolition
 
+Note long and lat seem to be reversed when applied to the map. Long/lat source https://developers.google.com/public-data/docs/canonical/countries_csv
+
 ```{r map4}
 # source(here::here("utils/ggplot2_theme.R"), echo = FALSE)
 
 #make dataframe for plotting circles for countries that have a slavery past and are communist
 #new version will have all dots, rather than a mix of dots and shading for comm countries
-t <- wi_map2 %>%
-subset(commst == 1, select = c(id)) %>%
-mutate(Country = countrycode(id, "iso3c", "country.name")) %>%
-subset(!(Country %in% comm_dat$Country))
+iso_lat_long <- read.csv(here::here("data", "iso_lat_long.csv"), col.names = c("iso2c","long","lat"), header = F) %>%
+  mutate(Country = countrycode(iso2c, "iso2c", "country.name"),
+         id = countrycode(iso2c, "iso2c", "iso3c")) %>%
+  subset(id %in% wi_map2$id[wi_map2$commst == 1]) %>%
+  subset(!(Country %in% comm_dat$Country), select = c(Country, long, lat))
 
 #note S and W are negative
 comm_dat <- data.frame(Country = c("Cuba", "Grenada", "Benin", "Congo", "Somalia", "Ethiopia", "Angola", "Mozambique", "Madagascar", "Seychelles", "Sao Tome"),
                        long = c(23.1136, 12.8, 9.3077, -0.2280, 5.1521, 9.1450, -11.2027, -13.8, -18.7669, -4.6796, 0.1864),
                        lat = c(-82.3666, -61.6790, 2.3158, 15.8277, 46.1996, 40.4897, 17.8739, 37.5, 46.8691, 55.492, -6.6131))
-  
+
+comm_dat = rbind(comm_dat, iso_lat_long) %>%
+  subset(!is.na(Country))
+
 comm_sf = st_as_sf(comm_dat, coords = c("lat", "long"), 
                  crs = 4326, agr = "constant")
+```
+
+
+```{r map4.1}
 # updated comm data file
 wi_map2<- wi_map %>%
   mutate(abol = ifelse(abol < 1866, 2, 
@@ -203,6 +213,8 @@ wi_map2<- wi_map %>%
          )
 agg_png(filename = here::here("results","map4.png"), width = 1000, height = 800, res = 144)
 map2 <- wi_map2 %>%
+  mutate(abol = ifelse(abol == 1, NA, abol)) %>%
+  mutate(abol = ifelse(id == "ARM", 1, abol)) %>%
   ggplot() +
   geom_sf(aes(fill = factor(abol)), size = 0.15, colour = "black") +
   scale_fill_manual(labels = c("Communist", 
