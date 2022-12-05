@@ -177,7 +177,16 @@ Note long and lat seem to be reversed when applied to the map. Long/lat source h
 
 ```{r map4}
 # source(here::here("utils/ggplot2_theme.R"), echo = FALSE)
-
+wi_map2<- wi_map %>%
+  mutate(abol = ifelse(abol < 1866, 2, 
+                ifelse(abol > 1865 & abol < 1931, 3,
+                ifelse(abol > 1930 & abol < 1956, 4, 
+                ifelse(abol > 1955 & abol < 1961, 5,
+                ifelse(abol > 1960 & abol < 1971, 6,
+                ifelse(abol > 1970 & abol < 1982, 7, 8)))))),
+         abol = ifelse(noslave == 1, NA, abol),
+         abol = ifelse(commst == 1 & is.na(abol), 1, abol)
+         )
 #make dataframe for plotting circles for countries that have a slavery past and are communist
 #new version will have all dots, rather than a mix of dots and shading for comm countries
 iso_lat_long <- read.csv(here::here("data", "iso_lat_long.csv"), col.names = c("iso2c","long","lat"), header = F) %>%
@@ -201,16 +210,7 @@ comm_sf = st_as_sf(comm_dat, coords = c("lat", "long"),
 
 ```{r map4.1}
 # updated comm data file
-wi_map2<- wi_map %>%
-  mutate(abol = ifelse(abol < 1866, 2, 
-                ifelse(abol > 1865 & abol < 1931, 3,
-                ifelse(abol > 1930 & abol < 1956, 4, 
-                ifelse(abol > 1955 & abol < 1961, 5,
-                ifelse(abol > 1960 & abol < 1971, 6,
-                ifelse(abol > 1970 & abol < 1982, 7, 8)))))),
-         abol = ifelse(noslave == 1, NA, abol),
-         abol = ifelse(commst == 1 & is.na(abol), 1, abol)
-         )
+
 agg_png(filename = here::here("results","map4.png"), width = 1000, height = 800, res = 144)
 map2 <- wi_map2 %>%
   mutate(abol = ifelse(abol == 1, NA, abol)) %>%
@@ -251,13 +251,60 @@ dev.off()
 knitr::include_graphics(here::here("results","map4.png"))
 ```
 
+### New Map 1
 
-###
+It seems easier to udnerstand for the reader if we just put four categories into a map.
+
+
+1 - Enslaved Labor System
+2 - Successful Communist Revolution
+3 - Communism and Enslaved Labor
+4 - Non-Enslaved Labor System 
+
+```{r new_map1}
+wi_map2 <- wi_map2 %>%
+  mutate(four_cat = case_when(
+    noslave == 1 & commst == 0 ~ 4,
+    noslave == 0 & commst == 0 ~ 1,
+    noslave == 1 & commst == 1 ~ 2,
+    noslave == 0 & commst == 1 ~ 3,
+    TRUE ~ NA_real_
+  ))
+
+agg_png(here::here("results", "map1_new.png"), width = 1000, height = 800, res = 144)
+
+map1_new <- wi_map2 %>%
+  ggplot() +
+  geom_sf(aes(fill = factor(four_cat)), size = 0.15, colour = "black") +
+  scale_fill_manual(labels = c("Enslaved Labor System",
+                               "Successful Communist Revolution",
+                               "Communist & Enslaved Labor",
+                               "Neither"),
+                      values = c("#29AF7FFF",
+                                 "#482677FF",
+                                 "#33638DFF",
+                                 "#440154FF"
+                                 ),
+                        na.value = "grey90",
+                    na.translate = F) +
+    coord_sf(label_axes = "----") +
+    labs(fill = "") +
+    theme_classic()
+map1_new
+
+dev.off()
+
+knitr::include_graphics(here::here("results", "map1_new.png"))
+  
+
+```
+
+### Save Data
 
 ```{r savemapdata}
 #ggsave(here::here("results","abol_indep.svg"), plot=abol_indep, width=10, height=7)
-ggsave(here::here("results","map1.svg"), plot=first_full, width=10, height=7)
-ggsave(here::here("results","map2.svg"), plot=map2, width=10, height=7)
+ggsave(here::here("results","map2.svg"), plot=first_full, width=10, height=7)
+ggsave(here::here("results","map1.svg"), plot=map1_new, width=10, height=7)
 
 write.csv(wi_map, here::here("data", "wi_map.csv"), row.names = F)
 write.csv(comm_sf, here::here("data", "comm_sf.csv"), row.names = F)
@@ -265,4 +312,4 @@ write.csv(wi_map2, here::here("data", "wi_map2.csv"), row.names = F)
 ```
 
 
-
+credentials::set_github_pat("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")
