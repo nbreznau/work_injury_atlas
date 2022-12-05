@@ -312,4 +312,4 @@ write.csv(wi_map2, here::here("data", "wi_map2.csv"), row.names = F)
 ```
 
 
-credentials::set_github_pat("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")
+
