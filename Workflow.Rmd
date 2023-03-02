@@ -31,8 +31,7 @@ pacman::p_load("tidyverse","ggplot2","kableExtra","GLMMadaptive",
 ```
 
 ```{r loaddata}
-wi_df <- read.csv(file = "data/wi_df.csv", header=T)
-wi_df_comb <- read.csv(file = here::here("data","wi_df_comb.csv"),header= T)
+wi_df <- read.csv(file = here::here("data", "wi_df.csv"), header=T)
 ```
 
 

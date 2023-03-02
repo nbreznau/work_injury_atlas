@@ -1,21 +1,21 @@
 ---
-title: "1: Data Setup"
-output: html_notebook
+title: "The Work-Injury Introduction and Expansion Dataset"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
-Nate Breznau, breznau.nate@gmail.com
+### Nate Breznau, [breznau.nate@gmail.com](mailto: breznau.nate@gmail.com)
 
-*gwip_v1.csv* ([Breznau and Lanver 2020](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/IVKYIE))
 
-*mpd2018.csv* ([Maddison 2018](http://www.ggdc.net/maddison/maddison-project/home.htm), with author interpolations (see below))
+## Abstract
 
-*data_legal_slavery_country.csv* (Rosling 2020) - adapted, see below
+This workflow brings together various country-time indicators to construct a dataframe for us in the analysis. Many sources are theoretically relevant in the introduction and expansion of work-injury policy. These data are a combination of information about economic development, work-injury policy, the legal end of slavery and forced labor and democratization.
 
-*qog_bas_cs_jan20.csv* ([Dahlberg et al. 2020](http://www.qog.pol.gu.se doi:10.18157/qogbasjan20))
 
-*data/fmrcmnst.csv* Former Communist/Socialist - author's own coding
 
-*PolityData.rds* ([Polity IV scores](http://www.systemicpeace.org/)) Saved as this file to preserve replicability (as Polity scores get updated regularly)
+## Setup
 
 ```{r setup, include=FALSE, message=F, warning=F}
 
@@ -28,111 +28,154 @@ completeFun <- function(data, desiredCols) {
   return(data[completeVec, ])
 }
 
-
 library(pacman)
 pacman::p_load("dplyr","tidyr","xlsx","countrycode","zoo","knitr","ggplot2","foreign","kableExtra","ragg")
 
 ```
 
 
-## Import Data
 
 ### GWIP
 
+The Global Work-Injury Policy Data. 
+
+*gwip_v1.csv* ([Breznau and Lanver 2020](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/IVKYIE))
+
 ```{r data1, include=F}
 
-workinj<- read.csv("data/gwip_v1.csv", header = T)
+workinj<- read.csv(here::here("data", "gwip_v1.csv"), header = T)
 
 ```
 
-### GDP
+### Independent Nation States
 
-[Maddison 2018 version](http://www.ggdc.net/maddison/maddison-project/home.htm). (Bolt, Inklaar, de Jong and Luiten van Zanden 2018)
+We aim to measure when geographic territories, peoples or empires became independent nation states. This is important for several reasons. The primary reason is that social policy - what we understand as welfare state development - was only implemented by nation states. By definition a welfare state requires a national state governance. The second reason is that prior to nation states and internationally recognized borders, geographies shifted immensely. China, Germany, Poland and France for example included dramatically different geographic spaces during their empire(s).
+
+The modern nation state arguably starts in Europe, possibly with the French Revolution. However, the wartime shifting borders and constant overthrowing of various powers during the prior to the early 19th century means coding 'national independence' during this period is misleading. Therefore our national independence variable has most European countries coded as 1816 (e.g., Germany and France) or later. The US is the oldest in the data with 1783 and China is much 'younger' with 1860 as this marked the moment when international conflicts pushed China into a reactive (and smaller) national policy. These measures are not intended to reflect prevailing historical narratives, rather to trace the orgins of nation states and their geographies as we know them today. 
+
+
+### GDP per capita
+
+*mpd2018.csv* [Maddison 2018 version](http://www.ggdc.net/maddison/maddison-project/home.htm). (Bolt, Inklaar, de Jong and Luiten van Zanden 2018)
+
+The goal is to have a variable that compares economic development (a proxy for industrialization, measured as GDP per capita) in 1900. In hindsight not ideal, but I simply added missing values to the Excel sheet rather than automate this.
+
+
+
+#### 1. Setup Frame
 
 To account for missing data the following changes were made to the file *mpd2018.xlsx* 
 
-1. Included missing cells to complete time series for all countries (adjusted xlsx file, just added year rows)
+Included missing cells to complete time series for all countries (adjusted xlsx file, just added year rows)
 
 This was then saved as *mpd2018i.xlsx*
 
-2. Missing Countries: GDP interpolations
+
+
+#### 2. Missing Countries: GDP interpolations
 
 ##### Imputation via similar cases
 
-*Bhutan* - take Sri Lanka
-*Belize* - take Jamaica
-*Liechtenstein* and *Monaco*- take Luxembourg
-*South Sudan* - take Sudan
-*San Marino* & *Andorra* - take Austria
+Although not perfect, missing data can be imputed using similar cases.
+
+| Target Country | Interpolation Case |
+|------|------|
+|*Bhutan*|Sri Lanka|
+|*Belize*|Jamaica|
+|*Liechtenstein*|Luxembourg|
+|*Monaco*|Luxembourg|
+|*South Sudan*|Sudan|
+|*San Marino*|Austria|
+|*Andorra*|Austria|
 
 ##### Lower GDP Islands, mostly S.E. Asia/Pacific
 
-*Suriname* - substituted with St. Lucia, used 1 for 1900 (adj for crash after 2013)
-*Solomon Islands* - tracks Cambodia
-*Fiji, Guyana, Samoa, Marshall Islands, Palau, Micronesia, Vanuatu* - track Indonesia back to 1950, then 500 for 1900
-*Kiribati* - like Myanmar (start at 500)
+| Target Country | Interpolation Case | Notes|
+|------|------|---------------|
+|*Suriname*|St. Lucia|1 for 1900 (adj for crash after 2013)|
+|*Solomon Islands*|Cambodia||
+|*Fiji, Guyana, Samoa, Marshall Islands, Palau, Micronesia, Vanuatu*|Indonesia (to 1950)|then 500 for 1900|
+|*Kiribati*| Myanmar|(start at 500)|
 
-<iframe width="800" height="325" frameborder="0" scrolling="no" marginwidth="0" marginheight="0" src="https://www.google.com/publicdata/embed?ds=d5bncppjof8f9_&amp;ctype=l&amp;strail=false&amp;bcs=d&amp;nselm=h&amp;met_y=ny_gdp_pcap_cd&amp;scale_y=lin&amp;ind_y=false&amp;rdim=world&amp;idim=country:GUY:WSM:FSM:MHL:KHM:FJI:ASM:MYS:IDN:VUT:SLB&amp;ifdim=world&amp;hl=en_US&amp;dl=en&amp;ind=false"></iframe>
+###### Goggle Data Query
+
+<iframe width="800" height="325" frameborder="0" scrolling="no" marginwidth="0" marginheight="0" src="https://www.google.com/publicdata/embed?ds=d5bncppjof8f9_&amp;ctype=l&amp;strail=false&amp;bcs=d&amp;nselm=h&amp;met_y=ny_gdp_pcap_cd&amp;scale_y=lin&amp;ind_y=false&amp;rdim=world&amp;idim=country:GUY:WSM:FSM:MHL:KHM:FJI:ASM:MYS:IDN:VUT:SLB&amp;ifdim=world&amp;hl=en_US&amp;dl=en&amp;ind=false" allow="autoplay" data-external="1">
+</iframe>
+
 
 ##### Low/Mid GDP Islands, mostly Latin America/Carribean
 
-*Bahamas* and *Brunei* (Brunei 500 in 1900) - 1945 manufacturing takes off, but strong pre-industrial economy; 1850 - 1000; after it is roughly double Barbados (note, 1994-2001 removed, and 2013-2016 removed due to peculiarities in the Maddison data; 2016 replaced with 35000)
+| Target Country | Interpolation Case | Notes|
+|------|------|---------------|
+|*Bahamas* & *Brunei*| No coparative case| Unique case (Brunei 500 in 1900) - 1945 manufacturing takes off, but strong pre-industrial economy; 1850 - 1000; after it is roughly double Barbados (note, 1994-2001 removed, and 2013-2016 removed due to peculiarities in the Maddison data; 2016 replaced with 35000)|
+|*St. Kitts & Nevis* & *Antigua & Barbuda*|Trinidad & Tobago||
+|*St. Vincent & Grenadines* & *Grenada*|Dominican Republic||
+|*Papua New Guinea*|Honduras||
 
-*St. Kitts & Nevis* and *Antigua & Barbuda* - like Trinidad & Tobago
-*St. Vincent & Grenadines* and *Grenada*- like Dominican Republic
-*Papua New Guinea* - like Honduras
+##### Google Data Query
 
-<iframe width="800" height="325" frameborder="0" scrolling="no" marginwidth="0" marginheight="0" src="https://www.google.com/publicdata/embed?ds=d5bncppjof8f9_&amp;ctype=l&amp;strail=false&amp;bcs=d&amp;nselm=h&amp;met_y=ny_gdp_pcap_cd&amp;scale_y=lin&amp;ind_y=false&amp;rdim=world&amp;idim=country:GRD:JAM:HND:BHS:DOM:CUB:ABW:ATG:HTI:VCT:KNA:BRB:TTO:LCA:PAN:DMA:PNG&amp;ifdim=world&amp;hl=en_US&amp;dl=en&amp;ind=false"></iframe>
+<iframe width="800" height="325" frameborder="0" scrolling="no" marginwidth="0" marginheight="0" src="https://www.google.com/publicdata/embed?ds=d5bncppjof8f9_&amp;ctype=l&amp;strail=false&amp;bcs=d&amp;nselm=h&amp;met_y=ny_gdp_pcap_cd&amp;scale_y=lin&amp;ind_y=false&amp;rdim=world&amp;idim=country:GRD:JAM:HND:BHS:DOM:CUB:ABW:ATG:HTI:VCT:KNA:BRB:TTO:LCA:PAN:DMA:PNG&amp;ifdim=world&amp;hl=en_US&amp;dl=en&amp;ind=false" allow="autoplay" data-external="1"></iframe>
 
-3. Countries with Missing Historical Data
 
-Scores Added for Interpolation
 
-#### Interpolate 1900 = 1
+#### 3. Partially Incomplete Time-Series
+
+For countries with GDP data that does not go all the way back to 1900, I interpolate 1900 and the linearly fill from this interpolation up to the earliest possible observation. 
+
+
+##### Interpolate 1900 = 1
 
 *Burundi*, *Gambia*, *Guinea*, *Guinea-Bissau*, *Equit. Guinea*, *Niger*, *Angola*, *Central Afr. Rep.*, *Cameroon*, *Comoros*, *Kenya*, *Mozambique*, *Rwanda* 
 *Mauritania*, *Somalia* 
 (The diff. btw. above and below categories has to do with time-series-interpolation over historical accuracy)
 
-#### Interpolate 1900 = 500
+
+
+##### Interpolate 1900 = 500
 *Albania*, *Benin*, *Burkina Faso*, *Botswana*, *D.R. Congo*, *Congo*, *Cabo Verde*, *Cambodia*, *Djibuti*, *Dominica Namibia*, *Senegal*, *Sudan*, *Togo*, *Chad*, *Ethiopia*, *Gabon*, *Laos*, *St. Lucia*, *Liberia*, *Thailand*, *Taiwan*, *Uganda*, *Madagascar*, *Mali*, *Malta*, *Mongolia*, *Mauritius*, *Malawi*, *Nigeria*, *Sierra Leone*, *Sao Tome*, *Seychelles*, *Tanzania*, *Ukraine*, *Yemen*, *Zambia*, *Zimbabwe*
 
-#### Other Interpolations
-*Somalia* 2016 = 1700
-*Trinidad and Tobago*, *Afghanistan*, *Bangladesh*, *Bahrain*, *Cyprus*,*Lybia*, *Oman*,*Pakistan* 1900 = 1000
-*UAE* 1950 = 500
-*UAE* 1958 (discovered oil)= 3000
-*UAE* 1960 (oil) = 20000
-*Qatar* 1938 = 500
-*Qatar* 1940 (discovered oil)= 2000
-*Qatar* 1943 (oil) = 10000
-*Kuwait* 1900 = 500
-*Kuwait* 1938 (discovered oil) = 2000
-*Kuwait* 1940 (oil) = 6000
-*Kuwait* 1950 = 9000
-*Nicaragua*, *Paraguay*, *El Salvador* 1850 = 1
-*Guatemala*, *Honduras*, *Haiti*, *Hungary*, *Korea*, *Myanmar*, *Puerto Rico*, *Romania* 1850 = 500
-*Singapore* 1850 = 900
-*Malaysia* 1850 = 1000
-*New Zealand* 1840 = 1000
-*Panama* 1850 = 1000
-*Russia* 1850 = 1500
-*Barbados* 1890 = 500
-*Iceland* 1890 = 1000
-*Ivory Coast* 1900 = 1200
 
-*Algeria* 1870 = 900
-*Algeria* 1900 = 1000
-*Algeria* 1920 = 3500
-*Algeria* 1950 = 6000
 
-*Estonia*,  *Kazakhstan* (1946 = 4700), *Kyrgystan*, *Latvia*, *Lithuania*, *Tajikistan*, *Turkmenistan* 1950 = 5000
-*Uzbekistan* 1950 = 3000
-*Moldova* 1950 = 1000
-*Israel* 1940 = 3500 (trend)
-*Luxembourg* 1900 = 5000 & 1890 = 3000
+##### Other Interpolations
 
-4. Russian Territories & USSR
+| Target Country | Unique Interpolation |
+|------|------|
+|*Somalia*| 2016 = 1700|
+|*Trinidad and Tobago*, *Afghanistan*, *Bangladesh*, *Bahrain*, |*Cyprus*,*Lybia*, *Oman*,*Pakistan*| 1900 = 1000|
+|*UAE*| 1950 = 500|
+|*UAE*| 1958 (discovered oil)= 3000|
+|*UAE*| 1960 (oil) = 20000|
+|*Qatar*| 1938 = 500|
+|*Qatar*| 1940 (discovered oil)= 2000|
+|*Qatar*| 1943 (oil) = 10000|
+|*Kuwait*| 1900 = 500|
+|*Kuwait*| 1938 (discovered oil) = 2000|
+|*Kuwait*| 1940 (oil) = 6000|
+|*Kuwait*| 1950 = 9000|
+|*Nicaragua*, *Paraguay*, *El Salvador*| 1850 = 1|
+|*Guatemala*, *Honduras*, *Haiti*, *Hungary*, *Korea*, *Myanmar*, |*Puerto Rico*, *Romania*| 1850 = 500|
+|*Singapore*| 1850 = 900|
+|*Malaysia*| 1850 = 1000|
+|*New Zealand*| 1840 = 1000|
+|*Panama*| 1850 = 1000|
+|*Russia*| 1850 = 1500|
+|*Barbados*| 1890 = 500|
+|*Iceland*| 1890 = 1000|
+|*Ivory Coast*| 1900 = 1200|
+|*Algeria*| 1870 = 900|
+|*Algeria*| 1900 = 1000|
+|*Algeria*| 1920 = 3500|
+|*Algeria*| 1950 = 6000|
+|*Estonia* & *Kazakhstan*| (1946 = 4700)|
+|*Kyrgystan*, *Latvia*, *Lithuania*, *Tajikistan*, *Turkmenistan*| 1950 = 5000|
+|*Uzbekistan*| 1950 = 3000|
+|*Moldova*| 1950 = 1000|
+|*Israel*|1940 = 3500 (trend)|
+|*Luxembourg*| 1900 = 5000 & 1890 = 3000|
+
+
+
+#### 4. Russian Territories & USSR
 
 Russian territories 1890-1949 (take USSR GDP)
 *Estonia*, *Latvia* & *Lithuania*
@@ -141,14 +184,18 @@ Russian territories 1890-1930 (take USSR GDP)
 *Kyrgyzstan*, *Croatia*, *Slovenia*,
 
 Russian USSR 'Territories' as of 1922 (use USSR 1900+GDP for predictive purposes)
-*Belarus*, *Ukraine*, and TransCaucasia (*Armenia*, *Azerbaijan*, *Georgia*) (USSR GDP until 1958 to give a transition until 1973, 1st year of Maddison)
 
-Final data saved as mpd2018.csv
+*Belarus*, *Ukraine*, and TransCaucasia (*Armenia*, *Azerbaijan*, *Georgia*) (USSR GDP until 1958 to give a transition until 1973, 1st year available in Maddison)
+
+Final data saved as *mpd2018.csv*
+
+
+
+#### 5. Import and Clean
 
 ```{r data2, include=F, warning=F}
 
-
-gdpm <- read.csv("data/mpd2018.csv", header=T, stringsAsFactors = F)
+gdpm <- read.csv(here::here("data", "mpd2018.csv"), header=T, stringsAsFactors = F)
 
 #identify GDP level at the year of first introduction
 gdpm$cow_code <- countrycode(gdpm$countrycode,'iso3c','cown')
@@ -186,7 +233,6 @@ gdpm$cow_code <- ifelse(gdpm$countrycode == "SUN" & gdpm$year<1991, 365, gdpm$co
 gdpm$cow_code <- ifelse(gdpm$countrycode == "RUS" & gdpm$year<1991, NA, gdpm$cow_code)
 gdpm$country <- ifelse(gdpm$cow_code == 365, "Russia", gdpm$country)
 
-
 #remove before 1840 (for clean interpolation)
 gdpm$year <- ifelse(gdpm$year<1840,NA,gdpm$year)
 
@@ -198,10 +244,6 @@ gdpm <- completeFun(gdpm, "cow_code")
 gdpm <- transform(gdpm, gdpi = ave(cgdppc, cow_code, FUN = function(x) na.approx(x, rule = 2)))
 
 gdpm <- completeFun(gdpm, "year")
-
-
-
-
 
 # % GDP increase signals capitalist/industrial production
 gdpm <- gdpm %>%
@@ -229,39 +271,41 @@ gdpm <- gdpm %>%
 gdpm$year <- ifelse(gdpm$year<1850,NA,gdpm$year)
 ```
 
+
+
+
+#### 6. Merge GWIP & GDP
+
 ```{r merge, include=F}
 
 gdpi <- dplyr::left_join(gdpm,workinj,by="cow_code")
 
-
 #cross-sectional version all year
 gdpi$labor_workinjury_firstlaw <- ifelse(gdpi$labor_workinjury_firstlaw==gdpi$year,gdpi$labor_workinjury_firstlaw,NA)
-
 
 #cross-sectional 1923 version
 gdpi <- completeFun(gdpi,"labor_workinjury_firstlaw")
 gdprm <- select(gdpi, cow_code, gdpi, gdp_7yr_rate, gdp_7yr_a, startgdp)
 
-
 # database for all years
-
 wi_df <- left_join(workinj,gdprm,by="cow_code")
 
 rm(gdprm)
 ```
 
 
-### Legal Slavery Database v1:
+
+### Legal Slavery & Forced LLabor
 
 Ola Rosling, Gapminder.org, gapm.io/d_lslave_v1
 
 https://www.gapminder.org/data/documentation/legal-slavery/
 file downloaded 24-04-2020
-Data countries by year sheet saved as a .csv file "data_legal_slavery_country.csv"
+Data countries by year sheet saved as a .csv file *data_legal_slavery_country.csv*
 
 ```{r abolish, warning = F, message = F}
 
-abolish <- read.csv("data/data_legal_slavery_country.csv", header=T, check.names=F, stringsAsFactors = F)
+abolish <- read.csv(here::here("data", "data_legal_slavery_country.csv"), header=T, check.names=F, stringsAsFactors = F)
 
 abolish_long <- abolish
 
@@ -284,7 +328,8 @@ abolish <- completeFun(abolish, "cow_code")
 abolish <- select(abolish, cow_code, abol)
 
 wi_df <- left_join(wi_df, abolish, by = "cow_code")
-# Saudi Arabia missing (others?)
+
+# Saudi Arabia missing
 wi_df <- wi_df %>%
   mutate(abol = ifelse(cow_code==670, 1962, abol))
 
@@ -316,9 +361,12 @@ wi_cnts[nrow(wi_cnts)+1,] <- c(6,1873,1)
 ```
 
 
+
+
+### Colonial Rule
+
 QoQ Basic Data
-http://www.qog.pol.gu.se doi:10.18157/qogbasjan20
-qog_bas_cs_jan20.csv
+*qog_bas_cs_jan20.csv* ([Dahlberg et al. 2020](http://www.qog.pol.gu.se doi:10.18157/qogbasjan20))
 
 Variable Description: This is a tenfold classification of the former colonial ruler of the country. We have excluded the British settler colonies (the US, Canada, Australia, Israel and New Zealand), and exclusively focused on Western overseas' colonialism. This implies that only Western colonizers (e.g. excluding Japanese colonialism), and only countries located in the non-Western hemisphere 'overseas' (e.g. excluding Ireland & Malta), have been coded. Each country that has been colonized since 1700 is coded. In cases of several colonial powers, the last one is counted, if it lasted for 10 years or longer. The categories are the following:
 
@@ -334,13 +382,12 @@ Variable Description: This is a tenfold classification of the former colonial ru
 9. British-French
 10. Australian
 
-I add Russian 'colonies' (prior to 1922):
+I add Russia as a colonizer (prior to 1922)
 
 11. Russia
 
-
 ```{r colonialism}
-colony <- read.csv("data/qog_bas_cs_jan20.csv", header=T, stringsAsFactors = F)
+colony <- read.csv(here::here("data", "qog_bas_cs_jan20.csv"), header=T, stringsAsFactors = F)
 
 colony$cow_code <- colony$ccodecow
 
@@ -359,7 +406,7 @@ wi_df$fcolony <- ifelse(wi_df$ht_colonial==0,0,1)
 
 ```
 
-
+Merge new additions
 
 ```{r moremerge}
 # get all data together so far
@@ -384,10 +431,18 @@ wi_df$fcolony <- ifelse(wi_df$ht_colonial==0,0,1)
 ```
 
 
+
+
+### Polity IV (Democratization)
+
+*PolityData.rds* ([Polity IV scores](http://www.systemicpeace.org/)) Saved as this file to preserve replicability (as Polity scores get updated regularly)
+
+#### Import/Clean
+
 ```{r polityIV}
 # Last retreived 07-Apr-2020
 # saved in case of version changes, see "A02 Data Compile Polity IV.R"
-PolityData <- readRDS("data/PolityData.rds")
+PolityData <- readRDS(here::here("data", "PolityData.rds"))
 
 # fix Germany & Vietnam
 PolityData$cow_code <- ifelse(PolityData$cow_code==260,255,PolityData$cow_code)
@@ -438,83 +493,97 @@ wi_df_long <- select(wi_df_long, fcolony, everything())
 
 ```
 
-### Fix Polity scores
-
-#### Missing (code based on Freedom House after indep, 2019 scores)
-31 Bahamas 8 (9/10)
-53 Barbados 9 (9.5/10)
-54 Dominica 8 (9/10)
-55 Grenada 8 (9/10)
-56 St Lucia 8 (9/10)
-57 St Vincent 8 (9/10)
-58 Antigua 7 (8.5/10)
-60 St Kitts 8 (9/10)
-80 Belize 7 (8.5/10)
-346 Bosnia & H. 0 (5/10)
-403 Sao Tome 6 (8/10)
-591 Seychelle 4 (7/10)
-835 Brunei -4 (3/10)
-935 Vanuatu 6 (8/10)
-946 Kiribati 8 (9/10)
-983 Marshall Is 8 (9/10)
-987 Micronesia 8 (9/10)
-990 Samoa 6 (8/10)
 
 
 
-#### Other Missing
-6 Puerto Rico - 1900 change to -8 (Foraker Act), 1917 -6 (Jones Act), 1943 2 (Statehood), 1952 6 Constitution
-115 Suriname 1955-1974 linear interpolate 
-255 Germany prior to 1868 -6 (simply extend series)
-375 Finland code as Russia prior to 1917
-310 Hungary, make equivalent to Germany 1851-1866
-205 Ireland, make equivalent to UK prior to 1921
-223	Liechtenstein take Germany
-221	Monaco take France
-331	San Marino France
-232	Andorra France
-290 Poland 1901-1917 (make -10 for theoretical reasons, war, gepolitical fractions)
-395 Iceland, make equivalent to Sweden (as analogy) from 1918 onward, -6 prior
-338 Malta 8 (9/10) 1946-2016, 0 prior to 1946
-712 Mongolia -7 prior to 1923 (extend series)
-339 Albania -10 prior to indep
-731 North Korea prior to 1947 -10 (remove cases prior to 1901)
-732 Korea prior to 1947 -10
-670 Saudi Arabia extend -10 back before 1926
-713 Taiwan extend -8 back 20 years
-817 Viet nam -10 for missing
+#### Missing
 
-#### Countries under British rule where the Europeans took over (score 2 prior to indep.)
+##### Freedom House after indep, 2019 interpolation
+
+|COW Code|Name|Interpolated Score| Freedom House Score|
+|---|-------|---|---|
+|31| Bahamas| 8 |(9/10)|
+|53| Barbados| 9 |(9.5/10)|
+|54| Dominica| 8 |(9/10)|
+|55| Grenada| 8 |(9/10)|
+|56| St Lucia| 8 |(9/10)|
+|57| St Vincent| 8 |(9/10)|
+|58| Antigua| 7 |(8.5/10)|
+|60| St Kitts| 8 |(9/10)|
+|80| Belize| 7 |(8.5/10)|
+|346| Bosnia & H.| 0 |(5/10)|
+|403| Sao Tome| 6 |(8/10)|
+|591| Seychelle| 4 |(7/10)|
+|835| Brunei| -4 |(3/10)|
+|935| Vanuatu| 6 |(8/10)|
+|946| Kiribati| 8 |(9/10)|
+|983| Marshall Is| 8 |(9/10)|
+|987| Micronesia| 8 |(9/10)|
+|990| Samoa| 6| |(8/10)|
+
+##### Other Missing
+
+|COW Code|Name|Unique Interpolations|
+|--|-------|-----------------------|
+|6| Puerto Rico| - 1900 change to -8 (Foraker Act), 1917 -6 (Jones Act), 1943 2 (Statehood), 1952 6 Constitution|
+|115| Suriname| 1955-1974 linear interpolate| 
+|255| Germany| prior to 1868 -6 (simply extend series)|
+|375| Finland| code as Russia prior to 1917|
+|310| Hungary| make equivalent to Germany 1851-1866|
+|205| Ireland| make equivalent to UK prior to 1921|
+|223|	Liechtenstein| use Germany|
+|221|	Monaco| use France|
+|331|	San Marino|use France|
+|232|	Andorra| France|
+|290| Poland| 1901-1917 (make -10 for theoretical reasons, war, gepolitical fractions)|
+|395| Iceland| make equivalent to Sweden (as analogy) from 1918 onward, -6 prior|
+|338| Malta| 8 (9/10) 1946-2016, 0 prior to 1946|
+|712| Mongolia| -7 prior to 1923 (extend series)|
+|339| Albania| -10 prior to indep|
+|731| North Korea| prior to 1947 -10 (remove cases prior to 1901)|
+|732| Korea| prior to 1947 -10|
+|670| Saudi Arabia| extend -10 back before 1926|
+|713| Taiwan| extend -8 back 20 years|
+|817| Viet nam| -10 for missing|
+
+##### British rule where  Europeans took over
+
+Score 2 prior to indep
+
 20 Canada
 660 Lebanon - somewhere in between - code 0 prior to 1943 (maybe remove fcolony=1?)
 900 Australia
 
+##### Parts of Yugoslavia 
 
-#### Parts of Yugoslavia (recode 1918-2005)
+(recode 1918-2005)
+
 341 Montenegro
 
-#### Parts of the USSR - use Russian scores 1922-1990 (all) 1918-1921 (only if missing)
-316 Czech Rep
-343 Macedonia
-359 Moldova
-366 Estonia
-367 Latvia
-368 Lithuania
-369 Ukraine take Russia for all missing
-370 Belarus
-372 Georgia
-373 Azerbaijan
-701 Turkmenistan
-702 Tajikistan
-703 Kyrgyzstan (make sure to replace imputed values!)
-704 Uzbekistan
+##### Parts of the USSR 
+
+use Russian scores 1922-1990 (all) 1918-1921 (only if missing)
+
+316 Czech Rep,
+343 Macedonia,
+359 Moldova,
+366 Estonia,
+367 Latvia,
+368 Lithuania,
+369 Ukraine take Russia for all missing,
+370 Belarus,
+372 Georgia,
+373 Azerbaijan,
+701 Turkmenistan,
+702 Tajikistan,
+703 Kyrgyzstan (make sure to replace imputed values!),
+704 Uzbekistan,
 705 Kazakhstan
 
-
-
+##### Add Scores
 
 ```{r fixpolity}
-
+# Use case_when in the future
 wi_df_long <- wi_df_long %>%
   mutate(polity2i = ifelse(cow_code==31 & is.na(polity2i), 8, polity2i),
   polity2i = ifelse(cow_code==53 & is.na(polity2i), 9, polity2i),
@@ -673,14 +742,17 @@ wi_df_long$polity2i <- ifelse(is.na(wi_df_long$polity2i),wi_df_long$polity2ii,wi
 
 ```
 
-#### Slavery Adjustments to Rosling data
+#### Slavery 
+
+Adjustments to Rosling data
 
 1. Abolition adjustment
+
 Min center by colonial powerj when otherwise unknown, then add the year the colonial power abolished slavery. It is a rough proxy.
 
 2. Other adjustments
 
-600 Morocco 1961 Slavery 'abolished' in the constituion Goodman, R. David. 2012. “Demystifying ‘Islamic Slavery’: Using Legal Practices to Reconstruct the End of Slavery in Fes, Morocco.” History in Africa 39: 143–74.
+600 Morocco 1961 Slavery 'abolished' in the constitution Goodman, R. David. 2012. “Demystifying ‘Islamic Slavery’: Using Legal Practices to Reconstruct the End of Slavery in Fes, Morocco.” History in Africa 39: 143–74.
 |-
 411 Eq Guinea, effective date 1945, prior to independence
 
@@ -703,7 +775,6 @@ In 6 France do min centering (1905)
 In 8 Belgium do mean centering (1890 in practice)
 
 ```{r slavery adjustment, warning = F, message = F}
-
 
 # 1 - 1863
 # 5 - 1838
@@ -737,11 +808,8 @@ wi_df_long <- select(wi_df_long, -c(abol))
 
 wi_df_long <- left_join(wi_df_long, wi_df_long_abol)
 
-```
+# Fix cross-sectional data
 
-Fix cross-sectional data
-
-```{r slavery_crosssec}
 wi_df <- wi_df %>%
   mutate(abol = ifelse(cow_code==52 | cow_code==53 | cow_code==55 | cow_code==60,1838,abol),
          abol = ifelse(cow_code==540 | cow_code==411,1945,abol),
@@ -751,72 +819,16 @@ wi_df <- wi_df %>%
 ```
 
 
-Not used, but potentially useful for future analyses
-
-```{r iwa}
-# Countries strongly impacted by the Revolutions of 1848
-# Countries sending delegates to the IWA's First International 1864-1867 (Austria, Great Britain, France, Germany, Belgium, Spain, US, Italy, the Netherlands, Switzerland and Russia (informally via Bakhuin))
-```
+Potentially useful for future analyses
 
 
-```{r fig1prep}
-# Start sequence four years before the first ever law
+Countries strongly impacted by the Revolutions of 1848.
+Countries sending delegates to the IWA's First International 1864-1867 (Austria, Great Britain, France, Germany, Belgium, Spain, US, Italy, the Netherlands, Switzerland and Russia (informally via Bakhuin))
 
+### Final Recodes
 
-yr = 1870
-yr = seq(yr, 2017, 1)
-fig1 <- data.frame(year=yr,
-                 numc=0, 
-                 numany=0,
-                 nuins=0,
-                 nusocins=0,
-                 numcS=0,
-                 numanyS=0,
-                 stringsAsFactors=FALSE)
+#### Former Communist Recodes
 
-for (year in 1870:2017){
-  fig1$numc <- ifelse(fig1$year==year, length(which(wi_df$independence <= year)), fig1$numc)
-  fig1$numany <- ifelse(fig1$year==year, length(which(wi_df$labor_workinjury_firstlaw <= year & wi_df$independence <= year)), fig1$numany)
-  fig1$nuins <- ifelse(fig1$year==year, length(which(wi_df$labor_workinjury_firstins <= year & wi_df$independence <= year)), fig1$nuins)
-  fig1$nusocins <- ifelse(fig1$year==year, length(which(wi_df$labor_workinjury_first_socins <= year & wi_df$independence <= year)), fig1$nusocins)
-}
-
-fig1 <- fig1 %>%
-  mutate(numcS = numc - (numany-nuins) - nuins,
-         numanyS = numany-nuins, # how many have any law but not risk pooling
-         numanySA = nuins - nusocins) # how many have risk pooling but not social insurance
-```
-
-
-```{r fig1}
-agg_png(file = "results/Fig2.png", width = 800, height = 550, units = 'px')
-ylim <- c(0, 1.09*max(fig1$nuins + fig1$numanyS + fig1$numcS))
-xx <- c(fig1$year, rev(fig1$year))
-yysrc2 <- c(rep(0, nrow(fig1)), rev(fig1$nuins))
-
-plot(x=fig1$year, y=fig1$nusocins, ylim=ylim, type='l', yaxt ='n',xaxt='n',col = 'white',
-ylab='Nation States (count)', xlab='Year',xaxs="i",yaxs="i",cex.lab=1.4)
-polygon(xx, yysrc2, col='#453781FF', border = 'grey50')
-
-yysrc0 <- c(fig1$nusocins, rev(fig1$nusocins) + rev(fig1$numanySA))
-polygon(xx, yysrc0, col='#287D8EFF', border = 'grey50')
-rev
-
-yysrc1 <- c(fig1$nuins, rev(fig1$nuins) + rev(fig1$numanyS))
-polygon(xx, yysrc1, col='#55C667FF', border = 'grey50')
-rev
-
-yysrc3 <- c(fig1$nusocins + fig1$numanyS + fig1$numanySA, rev(fig1$nusocins) + rev(fig1$numanyS) + rev(fig1$numanySA) + rev(fig1$numcS))
-
-polygon(xx, yysrc3, col='#FDE725FF', border = NA)
-axis(2, at=c(0,30,60,90,120,150,180),cex.axis=1.3,cex.lab=1.5)
-axis(1, at=c(1870,1894,1918,1942,1966,1990,2014), cex.axis=1.3,cex.lab=1.5)
-legend(x=1975, y=60, title="Work-Injury Law Type", title.adj = 0.2, c('No Law', 'Employer Liability', 'Risk Pooling', 'Social Insurance'), fill=c('#FDE725FF', '#55C667FF', '#287D8EFF','#453781FF'), cex=1.2)
-dev.off()
-
-knitr::include_graphics("results/Fig2.png")
-```
-#### Former Communist & Final Recodes
 The commmunist/socialist variable basically follows the list here:
 
 Iliev, Peter, and Louis Putterman. 2007. “Social Capability, History and the Economies of Communist and Postcommunist States.” Studies in Comparative International Development 42(1):36–66. doi: 10.1007/s12116-007-9002-8.
@@ -829,10 +841,12 @@ Makaye, Peter, and Constantine Munhande. 2013. “Zimbabwe’s Socialist Develop
  
 Nicaragua was never really socialist, or never fully run by a socialist government as sections of it were changing hands due to Cold War forces.
 
+*fmrcmnst.csv* constructed as a result
+
 ```{r finalrec, warning=F, message=F}
 
 # former/current communist list
-fmrc <- read.csv("data/fmrcmnst.csv", header = T)
+fmrc <- read.csv(here::here("data", "fmrcmnst.csv"), header = T)
 fmrc$cow_code <- countrycode(fmrc$country, "country.name","cown")
 fmrc$cow_code <- ifelse(fmrc$country == "Serbia", 345, fmrc$cow_code)
 fmrc$commst <- 1
@@ -903,8 +917,6 @@ wi_df <- left_join(wi_df, wi_df_long_merge, by = "cow_code")
 # some NAs, why?
 wi_df_long <- completeFun(wi_df_long, "year")
 
-
-
 wi_df_longa <- wi_df_long %>%
   group_by(cow_code) %>%
   mutate(polity2i_first = ifelse(year == (labor_workinjury_firstlaw - 2), polity2i, NA),
@@ -948,11 +960,11 @@ wi_df$yrs_indep <- ifelse(wi_df$yrs_indep < 0, 0, wi_df$yrs_indep)
 
 ```
 
-#### Communism and Slavery simultaneously
+#### Communism and Enslave Labor Simultaneously
 
 For countries that have both communism and slavery we have to assume that communist movements came later, and that they cannot be effective until they began. Therefore we recode the first law year to be 2 years prior to the independence of the state in the 11 cases where communism and a slave production coexist in a country. 
 
-To check this logic I also run a model with Communist and slave societies treated as independent entites where slavery societies are kept in the original coding format. 
+To check this logic we also run a model with Communist and slave societies treated as independent entites where slavery societies are kept in the original coding format. 
 
 ```{r recode}
 
@@ -989,16 +1001,85 @@ wi_df <- wi_df %>%
 ```
 
 
+
+### Work-Injury Law Visualization
+
+#### Prep Data
+
+```{r figXprep}
+# Start sequence four years before the first ever law
+
+yr = 1870
+yr = seq(yr, 2017, 1)
+fig1 <- data.frame(year=yr,
+                 numc=0, 
+                 numany=0,
+                 nuins=0,
+                 nusocins=0,
+                 numcS=0,
+                 numanyS=0,
+                 stringsAsFactors=FALSE)
+
+for (year in 1870:2017){
+  fig1$numc <- ifelse(fig1$year==year, length(which(wi_df$independence <= year)), fig1$numc)
+  fig1$numany <- ifelse(fig1$year==year, length(which(wi_df$labor_workinjury_firstlaw <= year & wi_df$independence <= year)), fig1$numany)
+  fig1$nuins <- ifelse(fig1$year==year, length(which(wi_df$labor_workinjury_firstins <= year & wi_df$independence <= year)), fig1$nuins)
+  fig1$nusocins <- ifelse(fig1$year==year, length(which(wi_df$labor_workinjury_first_socins <= year & wi_df$independence <= year)), fig1$nusocins)
+}
+
+fig1 <- fig1 %>%
+  mutate(numcS = numc - (numany-nuins) - nuins,
+         numanyS = numany-nuins, # how many have any law but not risk pooling
+         numanySA = nuins - nusocins) # how many have risk pooling but not social insurance
+```
+
+#### Render
+
+```{r figX, out.width=2000}
+agg_png(file = here::here("results", "Fig_Data_Viz.png"), width = 800, height = 550, units = 'px')
+ylim <- c(0, 1.09*max(fig1$nuins + fig1$numanyS + fig1$numcS))
+xx <- c(fig1$year, rev(fig1$year))
+yysrc2 <- c(rep(0, nrow(fig1)), rev(fig1$nuins))
+
+plot(x=fig1$year, y=fig1$nusocins, ylim=ylim, type='l', yaxt ='n',xaxt='n',col = 'white',
+ylab='Nation States (count)', xlab='Year',xaxs="i",yaxs="i",cex.lab=1.4)
+polygon(xx, yysrc2, col='#453781FF', border = 'grey50')
+
+yysrc0 <- c(fig1$nusocins, rev(fig1$nusocins) + rev(fig1$numanySA))
+polygon(xx, yysrc0, col='#287D8EFF', border = 'grey50')
+rev
+
+yysrc1 <- c(fig1$nuins, rev(fig1$nuins) + rev(fig1$numanyS))
+polygon(xx, yysrc1, col='#55C667FF', border = 'grey50')
+rev
+
+yysrc3 <- c(fig1$nusocins + fig1$numanyS + fig1$numanySA, rev(fig1$nusocins) + rev(fig1$numanyS) + rev(fig1$numanySA) + rev(fig1$numcS))
+
+polygon(xx, yysrc3, col='#FDE725FF', border = NA)
+axis(2, at=c(0,30,60,90,120,150,180),cex.axis=1.3,cex.lab=1.5)
+axis(1, at=c(1870,1894,1918,1942,1966,1990,2014), cex.axis=1.3,cex.lab=1.5)
+legend(x=1975, y=60, title="Work-Injury Law Type", title.adj = 0.2, c('No Law', 'Employer Liability', 'Risk Pooling', 'Social Insurance'), fill=c('#FDE725FF', '#55C667FF', '#287D8EFF','#453781FF'), cex=1.2)
+dev.off()
+
+knitr::include_graphics(here::here("results", "Fig_Data_Viz.png"))
+```
+
+
 ### Save Data for Analysis
 
 ```{r savepoint}
 # GDP for 
-write.csv(wi_df, file = "data/wi_df.csv", row.names = F)
-write.csv(wi_df_comb, file = here::here("data","wi_df_comb.csv"), row.names = F)
-write.csv(wi_df_long, file = "data/wi_df_long.csv", row.names = F)
+write.csv(wi_df, file = here::here("data", "wi_df.csv"), row.names = F)
+# write.csv(wi_df_comb, file = here::here("data","wi_df_comb.csv"), row.names = F)
+# write.csv(wi_df_long, file = here::here("data", "wi_df_long.csv"), row.names = F)
 ```
 
 
+### Colophon
+
+```{r sessioninfo}
+sessionInfo()
+```
 
 ## References
 
