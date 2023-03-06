@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' class='svglite' width='432.00pt' height='288.00pt' viewBox='0 0 432.00 288.00'>
+<defs>
+  <style type='text/css'><![CDATA[
+    .svglite line, .svglite polyline, .svglite polygon, .svglite path, .svglite rect, .svglite circle {
+      fill: none;
+      stroke: #000000;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-miterlimit: 10.00;
+    }
+    .svglite text {
+      white-space: pre;
+    }
+  ]]></style>
+</defs>
+<rect width='100%' height='100%' style='stroke: none; fill: #FFFFFF;'/>
+<defs>
+  <clipPath id='cpMC4wMHw0MzIuMDB8MC4wMHwyODguMDA='>
+    <rect x='0.00' y='0.00' width='432.00' height='288.00' />
+  </clipPath>
+</defs>
+<g clip-path='url(#cpMC4wMHw0MzIuMDB8MC4wMHwyODguMDA=)'>
+<rect x='0.000000000000032' y='0.00' width='432.00' height='288.00' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
+<rect x='165.37' y='8.69' width='196.75' height='35.14' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #228B22;' />
+<rect x='165.37' y='47.74' width='112.35' height='35.14' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #8B2500;' />
+<rect x='165.37' y='86.78' width='176.19' height='35.14' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #228B22;' />
+<rect x='165.37' y='125.83' width='110.83' height='35.14' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #228B22;' />
+<polyline points='307.62,32.12 307.62,20.41 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='307.62,26.26 416.60,26.26 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='416.60,32.12 416.60,20.41 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='350.43,71.16 350.43,59.45 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='350.43,65.31 205.01,65.31 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='205.01,71.16 205.01,59.45 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='298.86,110.21 298.86,98.50 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='298.86,104.35 384.26,104.35 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='384.26,110.21 384.26,98.50 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='229.58,149.26 229.58,137.54 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='229.58,143.40 322.83,143.40 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='322.83,149.26 322.83,137.54 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<text x='147.88' y='135.46' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='114.39px' lengthAdjust='spacingAndGlyphs'>A country with a 1-point</text>
+<text x='147.88' y='147.34' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='119.25px' lengthAdjust='spacingAndGlyphs'>higher Democracy score</text>
+<text x='147.88' y='159.22' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='128.45px' lengthAdjust='spacingAndGlyphs'>(PolityIV scale out of 10)...</text>
+<text x='147.88' y='102.35' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='109.47px' lengthAdjust='spacingAndGlyphs'>A country twice as rich</text>
+<text x='147.88' y='114.23' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='109.27px' lengthAdjust='spacingAndGlyphs'>(log GDP per capita)...</text>
+<text x='147.88' y='57.37' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='112.58px' lengthAdjust='spacingAndGlyphs'>A country that took one</text>
+<text x='147.88' y='69.25' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='105.21px' lengthAdjust='spacingAndGlyphs'>year longer to abolish</text>
+<text x='147.88' y='81.13' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='80.14px' lengthAdjust='spacingAndGlyphs'>enslaved labor...</text>
+<text x='147.88' y='24.26' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='132.11px' lengthAdjust='spacingAndGlyphs'>A country with a successful</text>
+<text x='147.88' y='36.14' text-anchor='end' style='font-size: 11.00px; font-family: "Arial";' textLength='123.54px' lengthAdjust='spacingAndGlyphs'>communist government...</text>
+<polyline points='152.81,166.83 429.17,166.83 ' style='stroke-width: 1.07; stroke-linecap: butt;' />
+<polyline points='165.37,169.57 165.37,166.83 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
+<polyline points='247.31,169.57 247.31,166.83 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
+<polyline points='329.26,169.57 329.26,166.83 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
+<polyline points='411.20,169.57 411.20,166.83 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
+<text x='165.37' y='177.49' text-anchor='middle' style='font-size: 8.00px; font-family: "Arial";' textLength='4.45px' lengthAdjust='spacingAndGlyphs'>0</text>
+<text x='247.31' y='177.49' text-anchor='middle' style='font-size: 8.00px; font-family: "Arial";' textLength='4.45px' lengthAdjust='spacingAndGlyphs'>2</text>
+<text x='329.26' y='177.49' text-anchor='middle' style='font-size: 8.00px; font-family: "Arial";' textLength='4.45px' lengthAdjust='spacingAndGlyphs'>4</text>
+<text x='411.20' y='177.49' text-anchor='middle' style='font-size: 8.00px; font-family: "Arial";' textLength='4.45px' lengthAdjust='spacingAndGlyphs'>6</text>
+<text x='290.99' y='197.91' text-anchor='middle' style='font-size: 11.00px; font-family: "Arial";' textLength='224.91px' lengthAdjust='spacingAndGlyphs'>...had this average difference in transition time</text>
+<rect x='221.56' y='203.07' width='138.86' height='28.24' style='stroke-width: 1.07; stroke: none; fill: #FFFFFF;' />
+<rect x='232.51' y='208.55' width='17.28' height='17.28' style='stroke-width: 1.07; stroke: none; fill: #F2F2F2;' />
+<rect x='233.22' y='209.26' width='15.86' height='15.86' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #228B22;' />
+<rect x='298.42' y='208.55' width='17.28' height='17.28' style='stroke-width: 1.07; stroke: none; fill: #F2F2F2;' />
+<rect x='299.13' y='209.26' width='15.86' height='15.86' style='stroke-width: 1.07; stroke: none; stroke-linecap: butt; stroke-linejoin: miter; fill: #8B2500;' />
+<text x='255.27' y='220.34' style='font-size: 8.80px; font-family: "Arial";' textLength='37.66px' lengthAdjust='spacingAndGlyphs'>Decrease</text>
+<text x='321.18' y='220.34' style='font-size: 8.80px; font-family: "Arial";' textLength='33.76px' lengthAdjust='spacingAndGlyphs'>Increase</text>
+</g>
+</svg>

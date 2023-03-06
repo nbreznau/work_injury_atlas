@@ -1,0 +1,277 @@
+---
+title: 'Maps for Social Atlas Work-Injury Policy'
+output:
+  html_document:
+    df_print: paged
+---
+## Map Generation
+
+### Nate Breznau, primary contact [breznau.nate@gmail.com](mailto:breznau.nate@gmail.com)
+
+### Felix Lanver
+
+### University of Bremen
+
+### Collaborative Research Institute ([SFB1342](https://www.socialpolicydynamics.de/en/)) "The Global Dynamics of Social Policy"
+
+
+## Setup
+
+Pacman used to install packages; however, check Colophon at end of this file for exact environment (R version, package versions).
+
+```{r setup}
+
+knitr::opts_chunk$set(echo = TRUE, message=F, warning=F)
+
+library(pacman)
+pacman::p_load("tidyverse","ggplot2",
+               "countrycode","ragg",
+               'rnaturalearth','sf', "ggmap")
+
+# necessary if not installed
+# webshot::install_phantomjs() 
+
+```
+
+## Load Data
+
+The data used in this workflow *wi_df.csv* were generated from various sources in the file [dataframe_setup_workflow_explanation.Rmd](https://github.com/nbreznau/work_injury_atlas/blob/main/data/dataframe_setup/dataframe_setup_workflow_explanation.Rmd).
+
+```{r loaddata}
+wi_df <- read.csv(file = here::here("data", "wi_df.csv"), header=T)
+```
+
+## Maps
+
+#### Prep Map DF
+
+```{r map_prep}
+
+wi_map <- ne_countries(returnclass = "sf") %>%
+  mutate(id = iso_a3) %>%
+  select(id, geometry)
+
+# add Greenland as a row identical to Denmark for a better looking map
+wi_df_grl <- wi_df %>%
+  subset(country_name == "Denmark") %>%
+  mutate(id = "GRL") %>%
+  select(id, labor_workinjury_firstlaw, first2full, abol, commst, noslave, abol_indep_gap)
+
+# need iso3c code for linking with map
+wi_df_m <- wi_df %>%
+  mutate(id = countrycode(country_name, "country.name", "iso3c")) %>%
+  select(id, labor_workinjury_firstlaw, first2full, abol, commst, noslave, abol_indep_gap)
+
+wi_df_m <- rbind(wi_df_m, wi_df_grl)
+
+wi_map <- full_join(wi_map, wi_df_m, by = c("id")) %>%
+  subset(id != "ATA") 
+
+```
+
+#### Map 1: The Legacies of Communism and Enslaved Labor Production
+
+```{r map1}
+wi_map2 <- wi_map %>%
+  mutate(abol_cat = case_when(abol < 1866 ~ 2,
+                              abol > 1865 & abol < 1931 ~ 3,
+                              abol > 1930 & abol < 1956 ~ 4, 
+                              abol > 1955 & abol < 1961 ~ 5,
+                              abol > 1960 & abol < 1971 ~ 6,
+                              abol > 1970 & abol < 1982 ~ 7, 
+                              abol > 1981 ~ 8,
+                              TRUE ~ NA_real_),
+         abol_cat = ifelse(noslave == 1, NA, abol_cat),
+         abol_cat = ifelse(commst == 1 & is.na(abol_cat), 1, abol_cat),
+         four_cat = case_when(
+           noslave == 1 & commst == 0 ~ 4,
+           noslave == 0 & commst == 0 ~ 1,
+           noslave == 1 & commst == 1 ~ 2,
+           noslave == 0 & commst == 1 ~ 3,
+           TRUE ~ NA_real_
+           )
+         )
+
+agg_png(here::here("results", "map1.png"), width = 1000, height = 800, res = 144)
+
+map1 <- wi_map2 %>%
+  ggplot() +
+  geom_sf(aes(fill = factor(four_cat)), size = 0.15, colour = "black") +
+  scale_fill_manual(labels = c("Enslaved Labor System",
+                               "Successful Communist Revolution",
+                               "Communist & Enslaved Labor",
+                               "Neither"),
+                      values = c("#29AF7FFF",
+                                 "#482677FF",
+                                 "#33638DFF",
+                                 "#440154FF"
+                                 ),
+                        na.value = "grey90",
+                    na.translate = F) +
+    coord_sf(label_axes = "----") +
+    labs(fill = "") +
+    theme_classic()
+map1
+
+dev.off()
+
+knitr::include_graphics(here::here("results", "map1.png"))
+
+```
+
+
+#### Map 2: The Rate at Which Countries Transitioned from a First Law to Work-Injury Insurance
+
+```{r map2}
+
+agg_png(filename = here::here("results","map2.png"), width = 1000, height = 800, res = 144)
+map2 <- wi_map %>%
+
+  ggplot(aes(fill = first2full)) +
+  geom_sf(size = 0.15, colour = "black") +
+  scale_fill_continuous(limits = range(wi_map$first2full),
+                        type = "gradient",
+                        high = "#132B43", low = "#56B1F7",
+                        guide = guide_colourbar(#label.position = "top",
+                                                #barwidth = 10, barheight = .5,
+                                                #ticks.linwidth = 1
+                          ),
+                        na.value = "white") +
+  #lims(x = c(-10100000,14000000)) +
+  coord_sf(label_axes = "----") +
+  labs(fill = NULL) +
+  theme_classic() +
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.key.width = unit(2, "line"))
+map2
+dev.off()
+
+knitr::include_graphics(here::here("results","map2.png"))
+```
+
+### Extra Maps 
+
+#### Map A: Year of Abolition
+
+Starting with nation state introduction or independence, the time it took to abolish enslaved labor or forced labor production. Negative numbers indicate this took place after independence
+
+Note long and lat seem to be reversed when applied to the map. Long/lat source https://developers.google.com/public-data/docs/canonical/countries_csv
+
+```{r mapA1}
+
+#note S and W are negative
+comm_dat <- data.frame(Country = c("Cuba", "Grenada", "Benin", "Congo", "Somalia", "Ethiopia", "Angola", "Mozambique", "Madagascar", "Seychelles", "Sao Tome"),
+                       long = c(23.1136, 12.8, 9.3077, -0.2280, 5.1521, 9.1450, -11.2027, -13.8, -18.7669, -4.6796, 0.1864),
+                       lat = c(-82.3666, -61.6790, 2.3158, 15.8277, 46.1996, 40.4897, 17.8739, 37.5, 46.8691, 55.492, -6.6131))
+
+#make dataframe for plotting circles for countries that have a slavery past and are communist
+#new version will have all dots, rather than a mix of dots and shading for comm countries
+iso_lat_long <- read.csv(here::here("data", "iso_lat_long.csv"), col.names = c("iso2c","long","lat"), header = F) %>%
+  mutate(Country = countrycode(iso2c, "iso2c", "country.name"),
+         id = countrycode(iso2c, "iso2c", "iso3c")) %>%
+  subset(id %in% wi_map2$id[wi_map2$commst == 1]) %>%
+  subset(!(Country %in% comm_dat$Country), select = c(Country, long, lat))
+
+comm_sf = st_as_sf(comm_dat, coords = c("lat", "long"), 
+                 crs = 4326, agr = "constant")
+
+comm_dat = rbind(comm_dat, iso_lat_long) %>%
+  subset(!is.na(Country))
+```
+
+
+```{r mapA2}
+# updated comm data file
+
+agg_png(filename = here::here("results","mapA.png"), width = 1000, height = 800, res = 144)
+
+mapA <- wi_map2 %>%
+  mutate(abol_cat = ifelse(id == "ARM", 1, abol_cat)) %>%
+  ggplot() +
+  geom_sf(aes(fill = factor(abol_cat)), size = 0.15, colour = "black") +
+  scale_fill_manual(labels = c("Communist", 
+                                 "Abolition:\n< 1866", 
+                                 "1866-1930", 
+                                 "1931-1955",
+                                 "1956-1960",
+                                 "1961-1970",
+                                 "1971-1981",
+                                 "1982+"),
+                      values = c("#FDE725FF",
+                                 "#29AF7FFF",
+                                 "#1F968BFF",
+                                 "#287D8EFF",
+                                 "#33638DFF",
+                                 "#404788FF",
+                                 "#482677FF",
+                                 "#440154FF"),
+                        na.value = "grey90",
+                    na.translate = F) +
+  geom_sf(data = comm_sf, size = 2, colour = "#FDE725FF", show.legend = F, inherit.aes = F) +
+  #lims(x = c(-10100000,14000000)) +
+  coord_sf(label_axes = "----") +
+  labs(fill = NULL,
+       title = "Communism and Abolition by Country",
+       caption = "Note: Abolition is when slavery and forced labor legally ended\nSource: GWIP v1.0 (Breznau and Lanver 2020); Legal Slavery v1 (Rosling 2018) adapted by Authors") +
+  theme_classic() +
+  theme(legend.position = "right",
+        legend.direction = "vertical",
+        legend.key.width = unit(1, "line"))
+mapA
+dev.off()
+
+knitr::include_graphics(here::here("results","mapA.png"))
+```
+
+
+#### Map B: Duration of Enslaved Labor Production
+
+```{r mapB}
+
+agg_png(filename = here::here("results","mapB.png"), width = 1000, height = 800, res = 144)
+
+mapB <- wi_map2 %>% 
+  mutate(abol_indep_gap_trim = ifelse(abol_indep_gap < -75, -75, 
+                               ifelse(abol_indep_gap > 75, 75, abol_indep_gap)),
+         abol_indep_gap_trim = abol_indep_gap_trim + 75) %>%
+  ggplot() +
+    geom_sf(aes(fill = abol_indep_gap_trim), size = 0.15, colour = "black") +
+    scale_fill_viridis_c() +
+    labs(fill = "Years of\nLegal Slavery\n(trimmed at 150)") +
+    coord_sf(label_axes = "----") +
+      theme_classic() +
+      theme(legend.position = "right",
+        legend.direction = "vertical",
+        legend.key.width = unit(1, "line"))
+mapB
+
+dev.off()
+
+knitr::include_graphics(here::here("results", "mapB.png"))
+
+
+
+```
+
+
+
+### Save Data
+
+```{r savemapdata}
+
+ggsave(here::here("results","map2.svg"), plot=map2, width=10, height=7)
+ggsave(here::here("results","map1.svg"), plot=map1, width=10, height=7)
+
+write.csv(wi_map, here::here("data", "wi_map.csv"), row.names = F)
+write.csv(comm_sf, here::here("data", "comm_sf.csv"), row.names = F)
+write.csv(wi_map2, here::here("data", "wi_map2.csv"), row.names = F)
+```
+
+
+### Colophon
+
+```{r sessionInfo}
+sessionInfo()
+```
+

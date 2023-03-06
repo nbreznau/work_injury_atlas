@@ -1,0 +1,284 @@
+---
+title: 'Statistical Models for Social Atlas Work-Injury Policy'
+output:
+  html_document:
+    df_print: paged
+
+---
+
+## Regression Models
+
+### Nate Breznau, primary contact [breznau.nate@gmail.com](mailto:breznau.nate@gmail.com)
+
+### Felix Lanver
+
+### University of Bremen
+
+### Collaborative Research Institute ([SFB1342](https://www.socialpolicydynamics.de/en/)) "The Global Dynamics of Social Policy"
+
+
+## Setup
+
+Pacman used to install packages; however, check Colophon at end of this file for exact environment (R version, package versions).
+
+
+```{r setup}
+
+# necessary if not installed
+# webshot::install_phantomjs() 
+
+knitr::opts_chunk$set(echo = TRUE, message=F, warning=F)
+
+library(pacman)
+pacman::p_load("tidyverse","ggplot2","kableExtra","GLMMadaptive",
+               "countrycode","ragg", "sjPlot", "webshot",
+               "sandwich")
+
+
+
+```
+
+## Data
+
+```{r data}
+wi_df <- read.csv(here::here("data", "wi_df.csv"))
+wi_df_comb <- read.csv(here::here("data","wi_df_comb.csv"))
+```
+
+
+## Models 
+
+It is critical to treat the pre-1923 period differently as the early (western European) welfare states developed in a context that was mostly not democratic, among empires or fading empires, and under the first wave of industrialization. Communism played an important role in this period (see text), but for this analysis its impact is unmeasured mostly because we cannot measure it with a quantitative variable.
+
+Why 1923? Because the period after WWI was a major reconstruction in western Europe. Part of this 'new Europe' involved rapid adoption of welfare state and social security systems. This related to demobilization, new national socio-economic foci, and diffusion ([Obinger and Schmitt 2020](https://doi.org/10.1177/0958928719892852)). 
+
+#### First Dropping Non Adopters
+
+One logic suggests that those who never adopted risk-pooling, should not be included in the analysis, as we cannot say reliably how long it takes for them to adopt.
+
+```{r models}
+# without non-adopters
+
+m01 <- lm(labor_workinjury_firstlaw_na ~ gdplog  + period1  +  period1*polity2i_first, data = wi_df)
+m11 <- lm(scut ~ gdplog  + period1  + period1*polity2i_first, data = wi_df)
+m21 <- lm(first2full_2 ~ gdplog  + period1  + period1*polity2i_first , data = wi_df)
+m02 <- lm(labor_workinjury_firstlaw_na ~ gdplog  + period1  + period1*polity2i_first + commst + abol*noslave + noslave, data = wi_df)
+m12 <- lm(scut ~ gdplog  + period1 + period1*polity2i_first + commst + abol*noslave + noslave, data = wi_df)
+m22 <- lm(first2full_2 ~ gdplog  + period1 + period1*polity2i_first  +  commst + abol*noslave + noslave , data = wi_df)
+tab_model(m01, m02, m11, m12, m21, m22, p.style = "stars", show.ci = F, 
+          rm.terms = c("(Intercept)","noslave"), 
+          dv.labels = c("First Law 1", "First Law 2", "First Full-Law 1", "First Full-Law 2", "Years Between 1", "Years Between 2"), pred.labels = c("GDP","pre-1923","Democracy, post-1923","Democracy, pre-1923","Communist","Abolition of\nEnslaved Labor","No Enslaved Labor"), 
+          p.threshold = c(0.10,0.05,0.01),
+          file = here::here("results","tab1.html"))
+webshot("results/tab1.html", "results/tab1.png", cliprect = "viewport")
+
+knitr::include_graphics("results/tab1.png")
+```
+
+#### Including Non-Adopters
+
+We treat non-adopters as having a 65 year lag between laws. This means they took very long to 'adopt', even though they have not yet adopted
+
+```{r models2}
+m04 <- lm(labor_workinjury_firstlaw ~ gdplog  + period1  +  period1*polity2i_first, data = wi_df)
+m14 <- lm(scut_na ~ gdplog  + period1  + period1*polity2i_first, data = wi_df)
+m24 <- lm(first2full_na_2 ~ gdplog  + period1  + period1*polity2i_first , data = wi_df)
+m05 <- lm(labor_workinjury_firstlaw ~ gdplog  + period1  + period1*polity2i_first + commst + abol*noslave + noslave, data = wi_df)
+m15 <- lm(scut_na ~ gdplog  + period1 + period1*polity2i_first + commst + abol*noslave + noslave, data = wi_df)
+m25 <- lm(first2full_na_2 ~ gdplog  + period1 + period1*polity2i_first  +  commst + abol*noslave + noslave , data = wi_df)
+tab_model(m04, m05, m14, m15, m24, m25, p.style = "stars", show.ci = F, 
+          rm.terms = c("(Intercept)","noslave"), 
+          dv.labels = c("First Law 1", "First Law 2", "First Full-Law 1", "First Full-Law 2", "Years Between 1", "Years Between 2"), pred.labels = c("GDP","pre-1923","Democracy, post-1923","Democracy, pre-1923","Communist","Abolition of\nEnslaved Labor","No Enslaved Labor"), 
+          p.threshold = c(0.10,0.05,0.01),
+          file = here::here("results","tab2.html"))
+webshot("results/tab2.html", "results/tab2.png", cliprect = "viewport")
+
+knitr::include_graphics("results/tab2.png")
+```
+
+#### Third Treat Comm/Slave Cases Independently
+
+```{r models3}
+wi_df_comb <- wi_df_comb %>%
+  subset(!is.na(wi_df_comb$scut))
+m07 <- lm(labor_workinjury_firstlaw ~ gdplog  + period1  +  period1*polity2i_first, data = wi_df_comb, subset = !is.na(wi_df_comb$scut))
+m17 <- lm(scut ~ gdplog  + period1  + period1*polity2i_first, data = wi_df_comb)
+m27 <- lm(first2full ~ gdplog  + period1  + period1*polity2i_first , data = wi_df_comb)
+m08 <- lm(labor_workinjury_firstlaw ~ gdplog  + period1  + period1*polity2i_first + commst + abol*noslave + noslave, data = wi_df_comb, subset = !is.na(wi_df_comb$scut))
+m18 <- lm(scut ~ gdplog  + period1 + period1*polity2i_first + commst + abol*noslave + noslave, data = wi_df_comb)
+m28 <- lm(first2full ~ gdplog  + period1 + period1*polity2i_first  +  commst + abol*noslave + noslave , data = wi_df_comb)
+tab_model(m07, m08, m17, m18, m27, m28, p.style = "stars", show.ci = F, 
+          rm.terms = c("(Intercept)","noslave"), 
+          vcov.fun = "CL", 
+          vcov.type = "HC1",
+          vcov.args = list(cluster = wi_df_comb$cow_code),
+          dv.labels = c("First Law 1", "First Law 2", "First Full-Law 1", "First Full-Law 2", "Years Between 1", "Years Between 2"), pred.labels = c("GDP","pre-1923","Democracy, post-1923","Democracy, pre-1923","Communist","Abolition of\nEnslaved Labor","No Enslaved Labor Production"), 
+          p.threshold = c(0.10,0.05,0.01),
+          file = here::here("results","tab3.html"))
+webshot("results/tab3.html", "results/tab3.png", cliprect = "viewport")
+
+knitr::include_graphics("results/tab3.png")
+```
+## AME
+
+Calculate average marginal effects. This means calculating margins using predicted values with all covariates at their real values rather than their means. This gives a most accurate picture of the role of a given variable, given covariates. So not 'all else equal' but with an accurate 'picture of reality'. 
+
+```{r margins}
+# calculate average marginal effects by hand
+wi_abol1840 <- subset(wi_df, noslave==0)
+wi_abol1840$abol <- 1840
+wi_abol1920 <- subset(wi_df, noslave==0)
+wi_abol1920$abol <- 1920
+wi_com0 <- wi_df
+wi_com0 <- wi_com0 %>%
+  mutate(
+    #noslave = ifelse(commst == 1 & noslave == 0, 1, noslave),
+         commst = 0)
+wi_com1 <- wi_df
+wi_com1 <- wi_com1 %>%
+  mutate(
+    #noslave = ifelse(commst == 1 & noslave == 0, 1, noslave),
+         commst = 1)
+wi_gdp2 <- wi_df
+wi_gdp2$gdplog <- 2
+wi_gdp3 <- wi_df
+wi_gdp3$gdplog <- 3
+wi_dem0 <- wi_df
+wi_dem0$polity2i_first <- 0
+wi_dem4 <- wi_df
+wi_dem4$polity2i_first <- 4
+p1 <- predict.lm(m22, newdata = wi_com0)
+p2 <- predict.lm(m22, newdata = wi_com1)
+p3 <- predict.lm(m22, newdata = wi_abol1840)
+p4 <- predict.lm(m22, newdata = wi_abol1920)
+p5 <- predict.lm(m22, newdata = wi_gdp2)
+p6 <- predict.lm(m22, newdata = wi_gdp3)
+p7 <- predict.lm(m22, newdata = wi_dem0)
+p8 <- predict.lm(m22, newdata = wi_dem4)
+a <- t.test(p2,p1)
+b <- t.test(p4,p3)
+c <- t.test(p6,p5)
+d <- t.test(p8,p7)
+fmarg <- as.data.frame(1)
+fmarg[1,1] <- as.character("Communist")
+fmarg[1,2] <- a$estimate[1] - a$estimate[2]
+fmarg[1,3] <- a$conf.int[1] 
+fmarg[1,4] <- a$conf.int[2]
+fmarg[2,1] <- as.character("Abolition of\nEnslaved Labor")
+fmarg[2,2] <- b$estimate[1] - b$estimate[2]
+fmarg[2,3] <- b$conf.int[1] 
+fmarg[2,4] <- b$conf.int[2]
+fmarg[3,1] <- as.character("GDP per capita, log")
+fmarg[3,2] <- c$estimate[1] - c$estimate[2]
+fmarg[3,3] <- c$conf.int[1] 
+fmarg[3,4] <- c$conf.int[2]
+fmarg[4,1] <- as.character("Democracy, PolityIV")
+fmarg[4,2] <- d$estimate[1] - d$estimate[2]
+fmarg[4,3] <- d$conf.int[1] 
+fmarg[4,4] <- d$conf.int[2]
+fmarg[1,5] <- 4
+fmarg[2,5] <- 3
+fmarg[3,5] <- 2
+fmarg[4,5] <- 1
+```
+
+### Fig 1. AMEs Old Version
+
+```{r fig4}
+p = ggplot(fmarg, aes(V5, V2)) + geom_col(color = "grey30") + 
+  geom_errorbar(aes(ymin = V3, ymax = V4), width = 0.3) + 
+  coord_flip(clip = "off") + 
+  scale_x_discrete(limits = c("Democracy", "GDP, per capita log", "Later Abolition of\nEnslaved Labor", "Communist"),
+                   labels = c("Democracy", "GDP, per captia log", "Later Abolition of\nEnslaved Labor", "Communist")) +
+  labs(x=c(""), y=c("Average Marginal Effect on Years Between"), color="black") +
+  geom_text(label = " \n(from \'First Law\' to first blue-collar \'Full-Coverage Law\')",x = -0.4,y=-0.8, size=3.4, color="grey40") +
+    geom_segment(y=0, yend=0,x=0.33,xend=4.45,  color="black", linetype=1) +
+  scale_y_continuous(breaks = seq(-8, 8, by = 2)) +
+  theme(plot.margin = unit(c(0.1,0.1,2,0.1), "cm"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line.x = element_line(color = "black"),
+        axis.text.x = element_text(color = "black", size = 8),
+        axis.text.y = element_text(color = "black", size = 11),
+        axis.ticks.y = element_blank(),
+        axis.title.x = element_text(vjust = -2.5)) 
+ggsave("results/Fig3.png", plot=p, height=4, width=6, units="in", dpi=660)
+p
+```
+### Fig 1. AMEs New
+
+Generate color graph that has all bars positive, but distinguishes positive and negative by color.
+
+```{r fig1_color}
+
+# generate positive values and fill indicator
+
+fmarg_pos <- fmarg %>%
+  mutate(fill = ifelse(V2 < 0, "Decrease", "Increase"),
+         V2 = abs(V2),
+         V3 = abs(V3),
+         V4 = abs(V4))
+
+
+p = ggplot(fmarg_pos, aes(V5, V2)) + 
+  geom_col(aes(fill = as.factor(fill))) + 
+  geom_errorbar(aes(ymin = V3, ymax = V4), width = 0.3) + 
+  coord_flip(clip = "off") + 
+  scale_x_discrete(limits = c("Democracy", "GDP, per capita log", "Later Abolition of\nEnslaved Labor", "Communist"),
+                   labels = c("A country with a 1-point\nhigher Democracy score\n(PolityIV scale out of 10)...", "A country twice as rich\n(log GDP per capita)...", "A country that took one\nyear longer to abolish\nenslaved labor...", "A country with a successful\ncommunist government...")) +
+  labs(x=c(""), y=c("...had this average difference in transition time"), fill = "Adoption Time", color="black") +
+  scale_fill_manual(name = c(""), values = c("forestgreen", "orangered4")) +
+
+  scale_y_continuous(breaks = seq(0, 8, by = 2)) +
+  theme(plot.margin = unit(c(0.1,0.1,2,0.1), "cm"),
+        legend.position = "bottom",
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line.x = element_line(color = "black"),
+        axis.text.x = element_text(color = "black", size = 8),
+        axis.text.y = element_text(color = "black", size = 11),
+        axis.ticks.y = element_blank(),
+        axis.title.x = element_text(vjust = -2.5)) 
+ggsave("results/Fig1_pos.svg", plot=p, height=4, width=6, units="in", dpi=660)
+
+knitr::include_graphics(here::here("results", "Fig1_pos.svg"))
+```
+
+## Scatterplot
+
+Black is observed values, and blue is predicted values on all covariates.
+
+```{r abol_scatter}
+# predict values
+wi_df2 <- wi_df
+wi_df2$f2f_i <- predict.lm(m24, newdata = wi_df2)
+wi_df2 <- subset(wi_df2, noslave == 0)
+# remove missing on Years Between
+#wi_df2$f2f_i <- ifelse(is.na(wi_df2$first2full), NA, wi_df2$f2f_i)
+# make residuals
+wi_df2$f2f_r <- wi_df2$first2full_2 - wi_df2$f2f_i
+
+
+wi_df2 %>%
+ggplot() +
+  geom_point(aes(x = abol, y = first2full_2)) +
+  geom_point(aes(x = abol, y = f2f_i), color = "blue") +
+  geom_smooth(aes(x = abol, y = first2full_2), method=lm, color="black", level = 0.90) +
+  geom_smooth(aes(x = abol, y = f2f_i), method=lm, color="blue", level = 0.90) +
+  #geom_point(aes(x = abol, y = first2full)) +
+  #xlim(1950,2020) +
+  theme_classic()
+```
+
+## References
+
+Obinger, Herbert, and Carina Schmitt. 2020. “World War and Welfare Legislation in Western Countries.” Journal of European Social Policy 30(3):261–74. doi: 10.1177/0958928719892852.
+
+## Colophon
+
+```{r sessionInfo}
+sessionInfo()
+```
+
