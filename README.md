@@ -7,9 +7,15 @@ Communism and Enslaved Labor in the Global Development of Work Accident Insuranc
 
 ## Workflow
 
-All code and informaiton needed to replicate maps and regression analysis is available in the R Notebook [Workflow.Rmd](../Workflow.Rmd).
-
 The dataset used in the maps and analysis is compiled using the subroutine [dataframe_setup_workflow_explanation.Rmd](../data/dataframe_setup/ataframe_setup_workflow_explanation.Rmd)
+
+The maps are generated using [A_Workflow_Maps.Rmd](../A_Workflow_Maps.Rmd)
+
+The regression results and Figure are generated using [B_Workflow_Regressions.Rmd](../B_Workflow_Regressions.Rmd)
+
+Users can view the workflow documentation using their browser:
+* [Generate Maps](https://raw.githack.com/nbreznau/work_injury_atlas/main/A_Workflow_Maps.html)
+* [Run Regressions](https://raw.githack.com/nbreznau/work_injury_atlas/main/B_Workflow_Regressions.html)
 
 ## Data Sources
 
