@@ -31,4 +31,6 @@ Users can view the workflow documentation using their browser:
 
 *PolityData.rds* ([Polity IV scores](http://www.systemicpeace.org/)) Saved as this file to preserve replicability (as Polity scores get updated regularly)
 
+## MPSA 2024 Presentation
 
+[Link to pptx](https://docs.google.com/presentation/d/1jdTfvIIrNijWCUXMMsIq6Vh8IYWxlw_R/edit?usp=sharing&ouid=105191535830555378336&rtpof=true&sd=true)
